@@ -3,16 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>School Marquee Manager</title>
+  <title>Otter Marquee</title>
   <style>
+    
+    @font-face {
+        font-family: 'PASTI';
+        src: url('fonts/PASTI.woff2') format('woff2'),
+            url('fonts/PASTI.woff') format('woff');
+        font-weight: normal;
+        font-style: normal;
+    } 
+
     body {
-      font-family: Arial, sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
       background: #f7f7f7;
       margin: 0;
       padding: 0;
     }
     header {
-      background: #004080;
+      background: #00388b;
       color: white;
       padding: 1rem;
       text-align: center;
@@ -32,6 +41,7 @@
       margin-top: 0;
     }
     .marquee-board {
+      font-family: 'PASTI';
       background: black;
       color: lime;
       font-family: monospace;
@@ -62,6 +72,7 @@
       border-radius: 4px;
     }
     .message-form input[type=text] {
+      font-family: 'PASTI';
       width: 100%;
       margin-bottom: 0.5rem;
       padding: 0.4rem;
