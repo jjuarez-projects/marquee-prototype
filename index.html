@@ -122,114 +122,167 @@
   </main>
 
   <script>
-    const form = document.getElementById('message-form');
-    const scheduledList = document.getElementById('scheduled-list');
-    const currentBoard = document.getElementById('current-board');
-    const prepSheet = document.getElementById('prep-sheet');
-    
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('message-form');
+  const scheduledList = document.getElementById('scheduled-list');
+  const currentBoard = document.getElementById('current-board');
+  const prepSheet = document.getElementById('prep-sheet');
 
-    let scheduledMessages = [];
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const data = new FormData(form);
-      const message = [
-        data.get('line1') || '',
-        data.get('line2') || '',
-        data.get('line3') || '',
-        data.get('line4') || ''
-      ].filter(l => l.trim() !== '');
-
-      if (message.length === 0) return;
-
-      scheduledMessages.push(message);
-      renderSchedule();
-      form.reset();
-    });
-
-    function renderSchedule() {
-      scheduledList.innerHTML = '';
-      scheduledMessages.forEach((msg, i) => {
-        const div = document.createElement('div');
-        div.className = 'line';
-        div.textContent = `Message ${i+1}: ${msg.join(' | ')}`;
-        div.addEventListener('click', () => applyMessage(i));
-        scheduledList.appendChild(div);
-      });
-    }
-
-    function applyMessage(index) {
-      const newMessage = scheduledMessages[index];
-
-      // Update marquee display
-      currentBoard.innerHTML = '';
+  // Ensure the current board has 4 lines (so we always have a predictable structure)
+  function ensureBoardLines() {
+    if (currentBoard.children.length === 0) {
       for (let i = 0; i < 4; i++) {
-        const line = document.createElement('div');
-        line.textContent = newMessage[i] || '';
-        currentBoard.appendChild(line);
+        const d = document.createElement('div');
+        d.textContent = '';
+        currentBoard.appendChild(d);
       }
-
-      // Generate prep sheet (fake add/remove)
-      generatePrepSheet(newMessage);
+    } else if (currentBoard.children.length < 4) {
+      for (let i = currentBoard.children.length; i < 4; i++) {
+        const d = document.createElement('div');
+        d.textContent = '';
+        currentBoard.appendChild(d);
+      }
     }
+  }
+  ensureBoardLines();
 
-    function generatePrepSheet(newMessage) {
-      const currentLines = Array.from(currentBoard.children).map(div => div.textContent);
-      const currentText = currentLines.join('').toUpperCase().replace(/\s+/g, '');
-      const newText = newMessage.join('').toUpperCase().replace(/\s+/g, '');
+  let scheduledMessages = [];
 
-      const addLetters = [...newText].filter(l => !currentText.includes(l));
-      const removeLetters = [...currentText].filter(l => !newText.includes(l));
+  // Submit new message (keeps same form IDs / names you already have)
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    const newMessage = [
+      data.get('line1') || '',
+      data.get('line2') || '',
+      data.get('line3') || '',
+      data.get('line4') || ''
+    ].filter(l => l.trim() !== '');
 
-      const input = document.getElementById("messageInput");
-  const addBtn = document.getElementById("addMessageBtn");
-  const scheduledList = document.getElementById("scheduledList");
-  const prepSheet = document.getElementById("prepSheet");
+    if (newMessage.length === 0) return;
 
-  addBtn.addEventListener("click", () => {
-    const text = input.value.trim();
-    if (!text) return;
+    scheduledMessages.push(newMessage);
+    renderSchedule();
 
-    // Create list item for Scheduled Messages
-    const li = document.createElement("li");
-    li.textContent = text;
-    scheduledList.appendChild(li);
+    // Show prep sheet comparing the CURRENT BOARD -> the newly added message
+    const currentLines = Array.from(currentBoard.children).map(d => d.textContent || '');
+    generatePrepFromBoards(currentLines, newMessage);
 
-    // Create list item for Prep Sheet
-    const prepLi = document.createElement("li");
-    prepLi.textContent = text;
-    prepSheet.appendChild(prepLi);
-
-    // Clear input
-    input.value = "";
+    form.reset();
   });
 
-      prepSheet.innerHTML = '';
-      if (addLetters.length) {
-        const li = document.createElement('li');
-        li.textContent = '+ ' + addLetters.join(', ');
-        prepSheet.appendChild(li);
-        const prepLi = document.createElement("li");
-        prepLi.textContent = text;
-        prepSheet.appendChild(prepLi);
-      }
-      if (removeLetters.length) {
-        const li = document.createElement('li');
-        li.textContent = '- ' + removeLetters.join(', ');
-        prepSheet.appendChild(li);
-        const prepLi = document.createElement("li");
-        prepLi.textContent = text;
-        prepSheet.appendChild(prepLi);
-      }
-      if (!addLetters.length && !removeLetters.length) {
-        const li = document.createElement('li');
-        li.textContent = 'No changes needed';
-        prepSheet.appendChild(li);
-        const prepLi = document.createElement("li");
-        prepLi.textContent = text;
-        prepSheet.appendChild(prepLi);
-      }
+  // Render the scheduled messages list
+  function renderSchedule() {
+    scheduledList.innerHTML = '';
+    scheduledMessages.forEach((msg, idx) => {
+      const container = document.createElement('div');
+      container.className = 'line';
+
+      const text = document.createElement('div');
+      text.textContent = `Message ${idx + 1}: ${msg.join(' | ')}`;
+      container.appendChild(text);
+
+      const applyBtn = document.createElement('button');
+      applyBtn.textContent = 'Apply';
+      applyBtn.style.marginLeft = '8px';
+      applyBtn.addEventListener('click', () => applyMessage(idx));
+      container.appendChild(applyBtn);
+
+      const del = document.createElement('button');
+      del.textContent = 'Delete';
+      del.style.marginLeft = '6px';
+      del.style.background = '#cc0000';
+      del.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        scheduledMessages.splice(idx, 1);
+        renderSchedule();
+        prepSheet.innerHTML = ''; // clear prep sheet on delete to avoid confusion
+      });
+      container.appendChild(del);
+
+      scheduledList.appendChild(container);
+    });
+  }
+
+  // Build counts from an array of lines (removes whitespace)
+  function charCountsFromLines(lines) {
+    const counts = {};
+    const joined = Array.isArray(lines) ? lines.join('') : String(lines);
+    const normalized = joined.toUpperCase().replace(/\s+/g, '');
+    for (const ch of normalized) {
+      counts[ch] = (counts[ch] || 0) + 1;
     }
-  </script>
+    return counts;
+  }
+
+  // Render counts into compact text
+  function renderCountsMap(map) {
+    if (!map || Object.keys(map).length === 0) return '(none)';
+    const parts = [];
+    const keys = Object.keys(map).sort();
+    for (const k of keys) parts.push(`${k}: ${map[k]}`);
+    return parts.join('   ');
+  }
+
+  // Generate the prep sheet given old (current) lines and new message lines
+  function generatePrepFromBoards(oldLines, newLines) {
+    prepSheet.innerHTML = '';
+
+    // REMOVE section (what to take down)
+    const removeHeader = document.createElement('li');
+    removeHeader.textContent = 'REMOVE (take down these letters)';
+    removeHeader.style.fontWeight = 'bold';
+    prepSheet.appendChild(removeHeader);
+
+    const remText = document.createElement('li');
+    remText.textContent = oldLines.join(' | ');
+    prepSheet.appendChild(remText);
+
+    const remCounts = charCountsFromLines(oldLines);
+    const remCountsLi = document.createElement('li');
+    remCountsLi.textContent = renderCountsMap(remCounts);
+    prepSheet.appendChild(remCountsLi);
+
+    // ADD section (what to put up)
+    const addHeader = document.createElement('li');
+    addHeader.textContent = 'ADD (put up these letters)';
+    addHeader.style.fontWeight = 'bold';
+    prepSheet.appendChild(addHeader);
+
+    const addText = document.createElement('li');
+    addText.textContent = newLines.join(' | ');
+    prepSheet.appendChild(addText);
+
+    const addCounts = charCountsFromLines(newLines);
+    const addCountsLi = document.createElement('li');
+    addCountsLi.textContent = renderCountsMap(addCounts);
+    prepSheet.appendChild(addCountsLi);
+  }
+
+  // Apply a scheduled message to the current board (shows prep BEFORE applying)
+  function applyMessage(index) {
+    const newMsg = scheduledMessages[index];
+    const oldLines = Array.from(currentBoard.children).map(d => d.textContent || '');
+
+    // Show the prep (REMOVE oldLines -> ADD newMsg) BEFORE changing the board
+    generatePrepFromBoards(oldLines, newMsg);
+
+    // Update the visible board
+    currentBoard.innerHTML = '';
+    for (let i = 0; i < 4; i++) {
+      const d = document.createElement('div');
+      d.textContent = newMsg[i] || '';
+      currentBoard.appendChild(d);
+    }
+
+    // Simulate rotation: remove the applied message from schedule
+    scheduledMessages.splice(index, 1);
+    renderSchedule();
+  }
+
+  // initial render (if you had seeded scheduledMessages in code, render them)
+  renderSchedule();
+});
+</script>
 </body>
 </html>
