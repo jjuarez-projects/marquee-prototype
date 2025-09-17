@@ -12,7 +12,7 @@
             url('fonts/PASTI.woff') format('woff');
         font-weight: normal;
         font-style: normal;
-    } 
+    }
 
     body {
       font-family: Arial, Helvetica, sans-serif;
@@ -33,15 +33,20 @@
     }
     section {
       background: white;
-      padding: 1rem;
-      border-radius: 8px;
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1{
+      font-family: 'PASTI';
     }
     h2 {
       margin-top: 0;
+      padding: 3px 1rem;
+      background: #00168b;
+      color: white;
     }
     .marquee-board {
-      font-family: 'PASTI';
       background: black;
       color: lime;
       font-family: monospace;
@@ -50,6 +55,7 @@
       min-height: 120px;
     }
     .marquee-board div {
+      font-family: 'PASTI';
       height: 1.5em;
     }
     .line {
@@ -63,13 +69,16 @@
     }
     .prep-list ul {
       list-style: none;
-      padding: 0;
+      padding: 3px 1rem;
     }
     .prep-list li {
       margin: 0.25rem 0;
       padding: 0.25rem 0.5rem;
       background: #eee;
       border-radius: 4px;
+    }
+    .message-form {
+        padding: 3px 1rem;
     }
     .message-form input[type=text] {
       font-family: 'PASTI';
@@ -88,11 +97,14 @@
     button:hover {
       background: #0066cc;
     }
+    .scheduled-list {
+      padding: 3px 1rem;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>School Marquee Manager</h1>
+    <h1>Otter Marquee</h1>
   </header>
   <main>
     <!-- Current marquee -->
