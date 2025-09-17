@@ -19,7 +19,6 @@
     }
     main {
       display: grid;
-      grid-template-columns: 1fr 1fr;
       gap: 1rem;
       padding: 1rem;
     }
@@ -128,50 +127,38 @@ document.addEventListener('DOMContentLoaded', () => {
   const currentBoard = document.getElementById('current-board');
   const prepSheet = document.getElementById('prep-sheet');
 
-  // Ensure the current board has 4 lines (so we always have a predictable structure)
+  // Ensure the board has 4 lines
   function ensureBoardLines() {
-    if (currentBoard.children.length === 0) {
-      for (let i = 0; i < 4; i++) {
-        const d = document.createElement('div');
-        d.textContent = '';
-        currentBoard.appendChild(d);
-      }
-    } else if (currentBoard.children.length < 4) {
-      for (let i = currentBoard.children.length; i < 4; i++) {
-        const d = document.createElement('div');
-        d.textContent = '';
-        currentBoard.appendChild(d);
-      }
+    while (currentBoard.children.length < 4) {
+      const div = document.createElement('div');
+      div.textContent = '';
+      currentBoard.appendChild(div);
     }
   }
   ensureBoardLines();
 
   let scheduledMessages = [];
 
-  // Submit new message (keeps same form IDs / names you already have)
+  // Submit a new message
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const data = new FormData(form);
-    const newMessage = [
+    const message = [
       data.get('line1') || '',
       data.get('line2') || '',
       data.get('line3') || '',
       data.get('line4') || ''
-    ].filter(l => l.trim() !== '');
+    ];
 
-    if (newMessage.length === 0) return;
+    // Skip empty messages
+    if (message.every(line => line.trim() === '')) return;
 
-    scheduledMessages.push(newMessage);
+    scheduledMessages.push(message);
     renderSchedule();
-
-    // Show prep sheet comparing the CURRENT BOARD -> the newly added message
-    const currentLines = Array.from(currentBoard.children).map(d => d.textContent || '');
-    generatePrepFromBoards(currentLines, newMessage);
-
+    generatePrepSheet(message); // show prep for the new message
     form.reset();
   });
 
-  // Render the scheduled messages list
   function renderSchedule() {
     scheduledList.innerHTML = '';
     scheduledMessages.forEach((msg, idx) => {
@@ -179,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
       container.className = 'line';
 
       const text = document.createElement('div');
-      text.textContent = `Message ${idx + 1}: ${msg.join(' | ')}`;
+      text.textContent = `Message ${idx+1}: ${msg.join(' | ')}`;
       container.appendChild(text);
 
       const applyBtn = document.createElement('button');
@@ -188,99 +175,76 @@ document.addEventListener('DOMContentLoaded', () => {
       applyBtn.addEventListener('click', () => applyMessage(idx));
       container.appendChild(applyBtn);
 
-      const del = document.createElement('button');
-      del.textContent = 'Delete';
-      del.style.marginLeft = '6px';
-      del.style.background = '#cc0000';
-      del.addEventListener('click', (ev) => {
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Delete';
+      delBtn.style.marginLeft = '6px';
+      delBtn.style.background = '#cc0000';
+      delBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
         scheduledMessages.splice(idx, 1);
         renderSchedule();
-        prepSheet.innerHTML = ''; // clear prep sheet on delete to avoid confusion
       });
-      container.appendChild(del);
+      container.appendChild(delBtn);
 
       scheduledList.appendChild(container);
     });
   }
 
-  // Build counts from an array of lines (removes whitespace)
-  function charCountsFromLines(lines) {
+  function charCounts(str) {
     const counts = {};
-    const joined = Array.isArray(lines) ? lines.join('') : String(lines);
-    const normalized = joined.toUpperCase().replace(/\s+/g, '');
+    const normalized = str.toUpperCase().replace(/\s+/g,'');
     for (const ch of normalized) {
       counts[ch] = (counts[ch] || 0) + 1;
     }
     return counts;
   }
 
-  // Render counts into compact text
-  function renderCountsMap(map) {
-    if (!map || Object.keys(map).length === 0) return '(none)';
-    const parts = [];
-    const keys = Object.keys(map).sort();
-    for (const k of keys) parts.push(`${k}: ${map[k]}`);
-    return parts.join('   ');
-  }
-
-  // Generate the prep sheet given old (current) lines and new message lines
-  function generatePrepFromBoards(oldLines, newLines) {
+  function generatePrepSheet(newMessage) {
     prepSheet.innerHTML = '';
+    const currentLines = Array.from(currentBoard.children).map(div => div.textContent || '');
 
-    // REMOVE section (what to take down)
-    const removeHeader = document.createElement('li');
-    removeHeader.textContent = 'REMOVE (take down these letters)';
-    removeHeader.style.fontWeight = 'bold';
-    prepSheet.appendChild(removeHeader);
+    newMessage.forEach((line, i) => {
+      const oldLine = currentLines[i] || '';
+      if (line.trim() === '' && oldLine.trim() === '') return; // skip empty/no change lines
 
-    const remText = document.createElement('li');
-    remText.textContent = oldLines.join(' | ');
-    prepSheet.appendChild(remText);
+      const liHeader = document.createElement('li');
+      liHeader.textContent = `Line ${i+1}:`;
+      liHeader.style.fontWeight = 'bold';
+      prepSheet.appendChild(liHeader);
 
-    const remCounts = charCountsFromLines(oldLines);
-    const remCountsLi = document.createElement('li');
-    remCountsLi.textContent = renderCountsMap(remCounts);
-    prepSheet.appendChild(remCountsLi);
+      const oldCounts = charCounts(oldLine);
+      const newCounts = charCounts(line);
 
-    // ADD section (what to put up)
-    const addHeader = document.createElement('li');
-    addHeader.textContent = 'ADD (put up these letters)';
-    addHeader.style.fontWeight = 'bold';
-    prepSheet.appendChild(addHeader);
+      const removeLetters = Object.keys(oldCounts).filter(ch => !newCounts[ch]);
+      const addLetters = Object.keys(newCounts).filter(ch => !oldCounts[ch]);
 
-    const addText = document.createElement('li');
-    addText.textContent = newLines.join(' | ');
-    prepSheet.appendChild(addText);
+      const liRemove = document.createElement('li');
+      liRemove.textContent = removeLetters.length ? '- ' + removeLetters.join(', ') : '- (none)';
+      prepSheet.appendChild(liRemove);
 
-    const addCounts = charCountsFromLines(newLines);
-    const addCountsLi = document.createElement('li');
-    addCountsLi.textContent = renderCountsMap(addCounts);
-    prepSheet.appendChild(addCountsLi);
+      const liAdd = document.createElement('li');
+      liAdd.textContent = addLetters.length ? '+ ' + addLetters.join(', ') : '+ (none)';
+      prepSheet.appendChild(liAdd);
+    });
   }
 
-  // Apply a scheduled message to the current board (shows prep BEFORE applying)
   function applyMessage(index) {
-    const newMsg = scheduledMessages[index];
-    const oldLines = Array.from(currentBoard.children).map(d => d.textContent || '');
+    const msg = scheduledMessages[index];
+    const currentLines = Array.from(currentBoard.children).map(div => div.textContent || '');
+    generatePrepSheet(msg); // prep BEFORE applying
 
-    // Show the prep (REMOVE oldLines -> ADD newMsg) BEFORE changing the board
-    generatePrepFromBoards(oldLines, newMsg);
+    // Apply only lines that have content in the new message
+    msg.forEach((line, i) => {
+      if (line.trim() !== '') {
+        currentBoard.children[i].textContent = line;
+      }
+    });
 
-    // Update the visible board
-    currentBoard.innerHTML = '';
-    for (let i = 0; i < 4; i++) {
-      const d = document.createElement('div');
-      d.textContent = newMsg[i] || '';
-      currentBoard.appendChild(d);
-    }
-
-    // Simulate rotation: remove the applied message from schedule
+    // Remove the message from scheduled
     scheduledMessages.splice(index, 1);
     renderSchedule();
   }
 
-  // initial render (if you had seeded scheduledMessages in code, render them)
   renderSchedule();
 });
 </script>
