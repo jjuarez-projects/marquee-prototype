@@ -1,126 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>School Marquee Manager</title>
-<style>
-body {
-font-family: Arial, sans-serif;
-background: #f7f7f7;
-margin: 0;
-padding: 0;
-}
-header {
-background: #004080;
-color: white;
-padding: 1rem;
-text-align: center;
-}
-main {
-display: grid;
-grid-template-columns: 1fr 1fr;
-gap: 1rem;
-padding: 1rem;
-}
-section {
-background: white;
-padding: 1rem;
-border-radius: 8px;
-box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-h2 {
-margin-top: 0;
-}
-.marquee-board {
-background: black;
-color: lime;
-font-family: monospace;
-padding: 1rem;
-border-radius: 8px;
-min-height: 120px;
-}
-.line {
-border-bottom: 1px dashed #ccc;
-margin-bottom: 0.5rem;
-padding-bottom: 0.5rem;
-}
-.prep-list ul {
-list-style: none;
-padding: 0;
-}
-.prep-list li {
-margin: 0.25rem 0;
-padding: 0.25rem 0.5rem;
-background: #eee;
-border-radius: 4px;
-}
-.message-form input[type=text] {
-width: 100%;
-margin-bottom: 0.5rem;
-}
-button {
-background: #004080;
-color: white;
-border: none;
-padding: 0.5rem 1rem;
-border-radius: 4px;
-cursor: pointer;
-}
-button:hover {
-background: #0066cc;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>School Marquee Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #004080;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      padding: 1rem;
+    }
+    section {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+    }
+    .marquee-board {
+      background: black;
+      color: lime;
+      font-family: monospace;
+      padding: 1rem;
+      border-radius: 8px;
+      min-height: 120px;
+    }
+    .marquee-board div {
+      height: 1.5em;
+    }
+    .line {
+      border-bottom: 1px dashed #ccc;
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.5rem;
+      cursor: pointer;
+    }
+    .line:hover {
+      background: #f0f8ff;
+    }
+    .prep-list ul {
+      list-style: none;
+      padding: 0;
+    }
+    .prep-list li {
+      margin: 0.25rem 0;
+      padding: 0.25rem 0.5rem;
+      background: #eee;
+      border-radius: 4px;
+    }
+    .message-form input[type=text] {
+      width: 100%;
+      margin-bottom: 0.5rem;
+      padding: 0.4rem;
+    }
+    button {
+      background: #004080;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0066cc;
+    }
+  </style>
 </head>
 <body>
-<header>
-<h1>School Marquee Manager</h1>
-</header>
-<main>
-<!-- Current marquee -->
-<section>
-<h2>Currently Displayed</h2>
-<div class="marquee-board">
-<div>Welcome Back Students</div>
-<div>Go Wildcats!</div>
-<div>Homecoming 9/20</div>
-<div>Early Dismissal Fri</div>
-</div>
-</section>
+  <header>
+    <h1>School Marquee Manager</h1>
+  </header>
+  <main>
+    <!-- Current marquee -->
+    <section>
+      <h2>Currently Displayed</h2>
+      <div class="marquee-board" id="current-board">
+        <div>Welcome Back Students</div>
+        <div>Go Wildcats!</div>
+        <div>Homecoming 9/20</div>
+        <div>Early Dismissal Fri</div>
+      </div>
+    </section>
 
+    <!-- New message planner -->
+    <section>
+      <h2>Plan a Message</h2>
+      <form class="message-form" id="message-form">
+        <input type="text" placeholder="Line 1" name="line1">
+        <input type="text" placeholder="Line 2" name="line2">
+        <input type="text" placeholder="Line 3" name="line3">
+        <input type="text" placeholder="Line 4" name="line4">
+        <button type="submit">Schedule Message</button>
+      </form>
+    </section>
 
-<!-- New message planner -->
-<section>
-<h2>Plan a Message</h2>
-<form class="message-form">
-<input type="text" placeholder="Line 1">
-<input type="text" placeholder="Line 2">
-<input type="text" placeholder="Line 3">
-<input type="text" placeholder="Line 4">
-<button type="button">Schedule Message</button>
-</form>
-</section>
+    <!-- Schedule view -->
+    <section>
+      <h2>Scheduled Messages</h2>
+      <div id="scheduled-list"></div>
+    </section>
 
+    <!-- Prep sheet -->
+    <section class="prep-list">
+      <h2>Prep Sheet (Next Change)</h2>
+      <ul id="prep-sheet"></ul>
+    </section>
+  </main>
 
-<!-- Schedule view -->
-<section>
-<h2>Scheduled Messages</h2>
-<div class="line">Message 1: PTA Meeting 9/15 (2 lines)</div>
-<div class="line">Message 2: Spirit Week 9/18-9/22 (4 lines)</div>
-<div class="line">Message 3: Teacher Workday 9/25 (1 line)</div>
-</section>
+  <script>
+    const form = document.getElementById('message-form');
+    const scheduledList = document.getElementById('scheduled-list');
+    const currentBoard = document.getElementById('current-board');
+    const prepSheet = document.getElementById('prep-sheet');
 
+    let scheduledMessages = [];
 
-<!-- Prep sheet -->
-<section class="prep-list">
-<h2>Prep Sheet (Next Change)</h2>
-<ul>
-<li>+ P, T, A</li>
-<li>- G, O, !</li>
-<li>+ 9, /, 1, 5</li>
-<li>- W, E, L, C, O, M, E</li>
-</ul>
-</section>
-</main>
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const message = [
+        data.get('line1') || '',
+        data.get('line2') || '',
+        data.get('line3') || '',
+        data.get('line4') || ''
+      ].filter(l => l.trim() !== '');
+
+      if (message.length === 0) return;
+
+      scheduledMessages.push(message);
+      renderSchedule();
+      form.reset();
+    });
+
+    function renderSchedule() {
+      scheduledList.innerHTML = '';
+      scheduledMessages.forEach((msg, i) => {
+        const div = document.createElement('div');
+        div.className = 'line';
+        div.textContent = `Message ${i+1}: ${msg.join(' | ')}`;
+        div.addEventListener('click', () => applyMessage(i));
+        scheduledList.appendChild(div);
+      });
+    }
+
+    function applyMessage(index) {
+      const newMessage = scheduledMessages[index];
+
+      // Update marquee display
+      currentBoard.innerHTML = '';
+      for (let i = 0; i < 4; i++) {
+        const line = document.createElement('div');
+        line.textContent = newMessage[i] || '';
+        currentBoard.appendChild(line);
+      }
+
+      // Generate prep sheet (fake add/remove)
+      generatePrepSheet(newMessage);
+    }
+
+    function generatePrepSheet(newMessage) {
+      const currentLines = Array.from(currentBoard.children).map(div => div.textContent);
+      const currentText = currentLines.join('').toUpperCase().replace(/\s+/g, '');
+      const newText = newMessage.join('').toUpperCase().replace(/\s+/g, '');
+
+      const addLetters = [...newText].filter(l => !currentText.includes(l));
+      const removeLetters = [...currentText].filter(l => !newText.includes(l));
+
+      prepSheet.innerHTML = '';
+      if (addLetters.length) {
+        const li = document.createElement('li');
+        li.textContent = '+ ' + addLetters.join(', ');
+        prepSheet.appendChild(li);
+      }
+      if (removeLetters.length) {
+        const li = document.createElement('li');
+        li.textContent = '- ' + removeLetters.join(', ');
+        prepSheet.appendChild(li);
+      }
+      if (!addLetters.length && !removeLetters.length) {
+        const li = document.createElement('li');
+        li.textContent = 'No changes needed';
+        prepSheet.appendChild(li);
+      }
+    }
+  </script>
 </body>
 </html>
