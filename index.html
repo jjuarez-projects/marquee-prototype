@@ -121,8 +121,67 @@
     </section>
   </main>
 
-<script>
-  const input = document.getElementById("messageInput");
+  <script>
+    const form = document.getElementById('message-form');
+    const scheduledList = document.getElementById('scheduled-list');
+    const currentBoard = document.getElementById('current-board');
+    const prepSheet = document.getElementById('prep-sheet');
+    
+
+    let scheduledMessages = [];
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const message = [
+        data.get('line1') || '',
+        data.get('line2') || '',
+        data.get('line3') || '',
+        data.get('line4') || ''
+      ].filter(l => l.trim() !== '');
+
+      if (message.length === 0) return;
+
+      scheduledMessages.push(message);
+      renderSchedule();
+      form.reset();
+    });
+
+    function renderSchedule() {
+      scheduledList.innerHTML = '';
+      scheduledMessages.forEach((msg, i) => {
+        const div = document.createElement('div');
+        div.className = 'line';
+        div.textContent = `Message ${i+1}: ${msg.join(' | ')}`;
+        div.addEventListener('click', () => applyMessage(i));
+        scheduledList.appendChild(div);
+      });
+    }
+
+    function applyMessage(index) {
+      const newMessage = scheduledMessages[index];
+
+      // Update marquee display
+      currentBoard.innerHTML = '';
+      for (let i = 0; i < 4; i++) {
+        const line = document.createElement('div');
+        line.textContent = newMessage[i] || '';
+        currentBoard.appendChild(line);
+      }
+
+      // Generate prep sheet (fake add/remove)
+      generatePrepSheet(newMessage);
+    }
+
+    function generatePrepSheet(newMessage) {
+      const currentLines = Array.from(currentBoard.children).map(div => div.textContent);
+      const currentText = currentLines.join('').toUpperCase().replace(/\s+/g, '');
+      const newText = newMessage.join('').toUpperCase().replace(/\s+/g, '');
+
+      const addLetters = [...newText].filter(l => !currentText.includes(l));
+      const removeLetters = [...currentText].filter(l => !newText.includes(l));
+
+      const input = document.getElementById("messageInput");
   const addBtn = document.getElementById("addMessageBtn");
   const scheduledList = document.getElementById("scheduledList");
   const prepSheet = document.getElementById("prepSheet");
@@ -144,6 +203,33 @@
     // Clear input
     input.value = "";
   });
-</script>
+
+      prepSheet.innerHTML = '';
+      if (addLetters.length) {
+        const li = document.createElement('li');
+        li.textContent = '+ ' + addLetters.join(', ');
+        prepSheet.appendChild(li);
+        const prepLi = document.createElement("li");
+        prepLi.textContent = text;
+        prepSheet.appendChild(prepLi);
+      }
+      if (removeLetters.length) {
+        const li = document.createElement('li');
+        li.textContent = '- ' + removeLetters.join(', ');
+        prepSheet.appendChild(li);
+        const prepLi = document.createElement("li");
+        prepLi.textContent = text;
+        prepSheet.appendChild(prepLi);
+      }
+      if (!addLetters.length && !removeLetters.length) {
+        const li = document.createElement('li');
+        li.textContent = 'No changes needed';
+        prepSheet.appendChild(li);
+        const prepLi = document.createElement("li");
+        prepLi.textContent = text;
+        prepSheet.appendChild(prepLi);
+      }
+    }
+  </script>
 </body>
 </html>
