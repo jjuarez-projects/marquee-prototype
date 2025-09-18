@@ -29,12 +29,20 @@ li[draggable="true"]:active {
   <!-- Draft Creation -->
   <section>
     <h2>Create Message Draft</h2>
-    <label>Line 1: <input type="text" id="line1"></label><br>
-    <label>Line 2: <input type="text" id="line2"></label><br>
-    <label>Line 3: <input type="text" id="line3"></label><br>
-    <label>Line 4: <input type="text" id="line4"></label><br>
-    <button id="saveDraftBtn">Save Draft</button>
-    <button id="submitPendingBtn">Submit for Approval</button>
+    <form action="insert_message.php" method="POST">
+      <label for="line">Line:</label>
+      <select name="line_id">
+        <option value="1">Line 1</option>
+        <option value="2">Line 2</option>
+        <option value="3">Line 3</option>
+        <option value="4">Line 4</option>
+      </select>
+
+      <label for="content">Message:</label>
+      <input type="text" name="content" required>
+
+      <button type="submit">Submit Message</button>
+    </form>
   </section>
 
   <!-- Lists -->
