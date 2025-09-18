@@ -158,7 +158,6 @@
 
     // Utility: render all lists
     function render() {
-      // Clear existing lists
       document.getElementById("draftList").innerHTML = "";
       document.getElementById("approvalList").innerHTML = "";
       document.getElementById("approvedList").innerHTML = "";
@@ -166,7 +165,7 @@
 
       messages.forEach(msg => {
         const li = document.createElement("li");
-        li.textContent = msg.lines.filter(l => l).join(" | ") + ` [${msg.status}]`;
+        li.textContent = msg.lines.filter(l => l).join(" | ");
 
         if (msg.status === "draft") {
           const submitBtn = document.createElement("button");
@@ -177,37 +176,62 @@
           delBtn.textContent = "Delete";
           delBtn.onclick = () => { messages = messages.filter(m => m.id !== msg.id); render(); };
 
+          li.appendChild(document.createTextNode(" [Draft] "));
           li.appendChild(submitBtn);
           li.appendChild(delBtn);
           document.getElementById("draftList").appendChild(li);
         }
 
         if (msg.status === "pending") {
+          li.appendChild(document.createTextNode(" [Pending] "));
+
+          const startInput = document.createElement("input");
+          startInput.type = "date";
+          startInput.value = msg.startDate || "";
+
+          const endInput = document.createElement("input");
+          endInput.type = "date";
+          endInput.value = msg.endDate || "";
+
           const approveBtn = document.createElement("button");
           approveBtn.textContent = "Approve";
-          approveBtn.onclick = () => { msg.status = "approved"; render(); };
+          approveBtn.onclick = () => {
+            if (!startInput.value || !endInput.value) {
+              alert("Please select both start and end dates.");
+              return;
+            }
+            msg.startDate = startInput.value;
+            msg.endDate = endInput.value;
+            msg.status = "approved";
+            render();
+          };
 
           const rejectBtn = document.createElement("button");
           rejectBtn.textContent = "Reject";
           rejectBtn.onclick = () => { msg.status = "draft"; render(); };
 
+          li.appendChild(document.createTextNode(" Start: "));
+          li.appendChild(startInput);
+          li.appendChild(document.createTextNode(" End: "));
+          li.appendChild(endInput);
           li.appendChild(approveBtn);
           li.appendChild(rejectBtn);
+
           document.getElementById("approvalList").appendChild(li);
         }
 
         if (msg.status === "approved") {
+          li.appendChild(document.createTextNode(` [Approved: ${msg.startDate} → ${msg.endDate}]`));
           document.getElementById("approvedList").appendChild(li);
 
-          // Also show in prep sheet
           const prepLi = document.createElement("li");
-          prepLi.textContent = msg.lines.filter(l => l).join(" | ");
+          prepLi.textContent = msg.lines.filter(l => l).join(" | ") +
+            ` (Active: ${msg.startDate} – ${msg.endDate})`;
           document.getElementById("prepSheet").appendChild(prepLi);
         }
       });
     }
 
-    // Create new message
     function createMessage(status) {
       const lines = [
         document.getElementById("line1").value.trim(),
@@ -215,7 +239,7 @@
         document.getElementById("line3").value.trim(),
         document.getElementById("line4").value.trim()
       ];
-      messages.push({ id: nextId++, lines, status });
+      messages.push({ id: nextId++, lines, status, startDate: null, endDate: null });
       document.getElementById("messageForm").reset();
       render();
     }
