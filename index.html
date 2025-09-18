@@ -63,20 +63,20 @@ li[draggable="true"]:active {
     <h2>Prep Sheet (Today’s Work)</h2>
     <ul id="prepSheetList">
         <?php
-        $prepSheet = $mysqli->query("
-            SELECT ps.prepsheet_id, ml.line_id, m.content
-            FROM PrepSheet ps
-            JOIN MessageLines ml ON ps.message_line_id = ml.message_line_id
-            JOIN Messages m ON ml.message_id = m.message_id
-            ORDER BY ps.position ASC
-        ");
+$prepSheet = $mysqli->query("
+    SELECT ps.prepsheet_id, ml.line_id, m.content
+    FROM PrepSheet ps
+    JOIN MessageLines ml ON ps.message_line_id = ml.message_line_id
+    JOIN Messages m ON ml.message_id = m.message_id
+    ORDER BY ps.position ASC
+");
 
-        while($row = $prepSheet->fetch_assoc()){
-            echo '<li draggable="true" data-id="'.$row['prepsheet_id'].'">';
-            echo 'Line '.$row['line_id'].': '.$row['content'];
-            echo '</li>';
-        }
-        ?>
+while($row = $prepSheet->fetch_assoc()){
+    echo '<li draggable="true" data-id="'.$row['prepsheet_id'].'">';
+    echo 'Line '.$row['line_id'].': '.$row['content'];
+    echo '</li>';
+}
+?>
       </ul>
   </section>
 

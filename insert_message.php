@@ -6,7 +6,7 @@ $db_password = "ThaZ5c@Oik1s";
 $dbname = "register";
 
 // Create single database connection for the entire page
-$mysqli = new mysqli($servername, $db_username, $db_password, $dbname);
+$mysqli = new mysqli('servername', 'db_username', 'db_password', 'dbname');
 
 session_start();
 $created_by = 1; // Hard-coded for demo, replace with $_SESSION['user_id']
