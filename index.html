@@ -130,8 +130,43 @@ function render() {
     // APPROVED
     if (msg.status === "approved") {
       const li = document.createElement("li");
-      li.textContent = content;
 
+      const lineList = document.createElement("ul");
+      lineList.style.listStyleType = "none";
+      lineList.style.paddingLeft = "0";
+
+      msg.lines.forEach((lineText, idx) => {
+        if (!lineText) return; // skip empty lines
+
+        const lineLi = document.createElement("li");
+        lineLi.textContent = lineText;
+        lineLi.draggable = true;
+        lineLi.dataset.index = idx;
+
+        // Drag events
+        lineLi.addEventListener("dragstart", (e) => {
+          e.dataTransfer.setData("text/plain", idx);
+        });
+        lineLi.addEventListener("dragover", (e) => {
+          e.preventDefault();
+        });
+        lineLi.addEventListener("drop", (e) => {
+          e.preventDefault();
+          const fromIdx = parseInt(e.dataTransfer.getData("text/plain"));
+          const toIdx = idx;
+          // Swap lines
+          const temp = msg.lines[fromIdx];
+          msg.lines[fromIdx] = msg.lines[toIdx];
+          msg.lines[toIdx] = temp;
+          render();
+        });
+
+        lineList.appendChild(lineLi);
+      });
+
+      li.appendChild(lineList);
+
+      // Add start/end date inputs + update button (existing)
       const startInput = document.createElement("input");
       startInput.type = "date";
       startInput.value = msg.startDate;
@@ -156,22 +191,23 @@ function render() {
 
       approvedList.appendChild(li);
 
-      // Prep sheet
+      // Prep sheet (unchanged)
       const prepLi = document.createElement("li");
-      prepLi.textContent = content + ` (Active: ${msg.startDate} – ${msg.endDate})`;
+      prepLi.textContent = msg.lines.filter(l => l).join(" | ") +
+                          ` (Active: ${msg.startDate} – ${msg.endDate})`;
 
       if (msg.startDate === today) {
-        prepLi.style.backgroundColor = "#d4edda"; // green
+        prepLi.style.backgroundColor = "#d4edda";
         prepLi.style.fontWeight = "bold";
         prepLi.textContent += " → ADD";
       }
       if (msg.endDate === today) {
-        prepLi.style.backgroundColor = "#f8d7da"; // red
+        prepLi.style.backgroundColor = "#f8d7da";
         prepLi.style.fontWeight = "bold";
         prepLi.textContent += " → REMOVE";
       }
       if (today > msg.startDate && today < msg.endDate) {
-        prepLi.style.backgroundColor = "#fff3cd"; // yellow
+        prepLi.style.backgroundColor = "#fff3cd";
       }
 
       prepSheet.appendChild(prepLi);
