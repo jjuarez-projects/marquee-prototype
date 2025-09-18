@@ -1,253 +1,173 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Otter Marquee</title>
-  <style>
-    
-    @font-face {
-        font-family: 'PASTI';
-        src: url('PASTI.woff2') format('woff2'),
-            url('PASTI.woff') format('woff');
-        font-weight: normal;
-        font-style: normal;
-    }
-
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      background: #f7f7f7;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      padding: 2px 20px;
-      background: #00388b;
-      color: white;
-      font-size: 1.5rem;
-      line-height: .5;
-      text-align: center;
-    }
-    main {
-      display: grid;
-      gap: 1rem;
-      padding: 1rem;
-    }
-    section {
-      background: white;
-      border: 1px solid #aaa;
-      border-bottom-left-radius: 8px;
-      border-bottom-right-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    h1{
-      font-family: 'PASTI';
-    }
-    h2 {
-      margin-top: 0;
-      padding: 10px 1rem;
-      background: #333;
-      border: 1px solid #444;
-      color: #777;
-      text-shadow: 0 4px 3px BLACK;
-    }
-    .marquee-board {
-      display: grid;
-      align-content: space-evenly;
-      min-height: 120px;
-      margin: 1rem;
-      padding: .5rem;
-      border: solid 1px black;
-      background: white;
-      color: black;
-      font-size: 1.5rem;
-      text-align: center;
-    }
-    .marquee-board div {
-      font-family: 'PASTI';
-      height: 1.5em;
-      align-content: center;
-    }
-    .line {
-      border-bottom: 1px dashed #ccc;
-      margin-bottom: 0.5rem;
-      padding-bottom: 0.5rem;
-      cursor: pointer;
-    }
-    .line:hover {
-      background: #f0f8ff;
-    }
-    .prep-list ul {
-      list-style: none;
-      padding: 3px 1rem;
-    }
-    .prep-list li {
-      margin: 0.25rem 0;
-      padding: 0.25rem 0.5rem;
-      background: #eee;
-      border-radius: 4px;
-    }
-    .message-form {
-        padding: 3px 1rem;
-    }
-    .message-form input[type=text] {
-      font-family: 'PASTI';
-      width: 100%;
-      margin-bottom: 0.5rem;
-      padding: 0.4rem;
-    }
-    button {
-      background: #004080;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0066cc;
-    }
-    #scheduled-list {
-      padding: 3px 1rem;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>School Marquee Manager Prototype</title>
+<style>
+  body { font-family: sans-serif; }
+  section { margin-bottom: 2em; }
+  ul { list-style-type: none; padding-left: 0; }
+  li { margin-bottom: 0.5em; }
+  input[type="text"], input[type="date"] { width: 200px; }
+</style>
 </head>
 <body>
-  <h1>otter marquee</h1>
+  <h1>School Marquee Manager Prototype</h1>
 
-  <!-- New Message Form -->
+  <!-- Draft Creation -->
   <section>
-    <h2>Create Message</h2>
-    <form id="messageForm">
-      <label>Line 1: <input type="text" id="line1" /></label><br/>
-      <label>Line 2: <input type="text" id="line2" /></label><br/>
-      <label>Line 3: <input type="text" id="line3" /></label><br/>
-      <label>Line 4: <input type="text" id="line4" /></label><br/>
-      <button type="button" id="saveDraftBtn">Save as Draft</button>
-      <button type="button" id="submitApprovalBtn">Submit for Approval</button>
-    </form>
+    <h2>Create Message Draft</h2>
+    <label>Line 1: <input type="text" id="line1"></label><br>
+    <label>Line 2: <input type="text" id="line2"></label><br>
+    <label>Line 3: <input type="text" id="line3"></label><br>
+    <label>Line 4: <input type="text" id="line4"></label><br>
+    <button id="saveDraftBtn">Save Draft</button>
+    <button id="submitPendingBtn">Submit for Approval</button>
   </section>
 
-  <!-- Drafts -->
+  <!-- Lists -->
   <section>
-    <h2>Draft Messages</h2>
+    <h2>Drafts</h2>
     <ul id="draftList"></ul>
   </section>
 
-  <!-- Approval Queue -->
   <section>
-    <h2>Approval Queue</h2>
-    <ul id="approvalList"></ul>
+    <h2>Pending Approvals</h2>
+    <ul id="pendingList"></ul>
   </section>
 
-  <!-- Approved / Scheduled -->
   <section>
-    <h2>Approved Messages</h2>
+    <h2>Approved / Scheduled</h2>
     <ul id="approvedList"></ul>
   </section>
 
-  <!-- Prep Sheet -->
   <section>
-    <h2>Prep Sheet (Approved Only)</h2>
+    <h2>Prep Sheet (Today’s Work)</h2>
     <ul id="prepSheet"></ul>
   </section>
 
-  <script>
-    let messages = [];
-    let nextId = 1;
+<script>
+let messages = [];
+let nextId = 1;
 
-    // Utility: render all lists
-    function render() {
-      document.getElementById("draftList").innerHTML = "";
-      document.getElementById("approvalList").innerHTML = "";
-      document.getElementById("approvedList").innerHTML = "";
-      document.getElementById("prepSheet").innerHTML = "";
+// Utility: today's date in yyyy-mm-dd for comparison
+function todayStr() {
+  const d = new Date();
+  return d.toISOString().split('T')[0];
+}
 
-      messages.forEach(msg => {
-        const li = document.createElement("li");
-        li.textContent = msg.lines.filter(l => l).join(" | ");
+// Render all lists
+function render() {
+  const draftList = document.getElementById("draftList");
+  const pendingList = document.getElementById("pendingList");
+  const approvedList = document.getElementById("approvedList");
+  const prepSheet = document.getElementById("prepSheet");
 
-        if (msg.status === "draft") {
-          const submitBtn = document.createElement("button");
-          submitBtn.textContent = "Submit for Approval";
-          submitBtn.onclick = () => { msg.status = "pending"; render(); };
+  draftList.innerHTML = "";
+  pendingList.innerHTML = "";
+  approvedList.innerHTML = "";
+  prepSheet.innerHTML = "";
 
-          const delBtn = document.createElement("button");
-          delBtn.textContent = "Delete";
-          delBtn.onclick = () => { messages = messages.filter(m => m.id !== msg.id); render(); };
+  messages.forEach(msg => {
+    const content = msg.lines.filter(l => l).join(" | ");
 
-          li.appendChild(document.createTextNode(" [Draft] "));
-          li.appendChild(submitBtn);
-          li.appendChild(delBtn);
-          document.getElementById("draftList").appendChild(li);
-        }
-
-        if (msg.status === "pending") {
-          li.appendChild(document.createTextNode(" [Pending] "));
-
-          const startInput = document.createElement("input");
-          startInput.type = "date";
-          startInput.value = msg.startDate || "";
-
-          const endInput = document.createElement("input");
-          endInput.type = "date";
-          endInput.value = msg.endDate || "";
-
-          const approveBtn = document.createElement("button");
-          approveBtn.textContent = "Approve";
-          approveBtn.onclick = () => {
-            if (!startInput.value || !endInput.value) {
-              alert("Please select both start and end dates.");
-              return;
-            }
-            msg.startDate = startInput.value;
-            msg.endDate = endInput.value;
-            msg.status = "approved";
-            render();
-          };
-
-          const rejectBtn = document.createElement("button");
-          rejectBtn.textContent = "Reject";
-          rejectBtn.onclick = () => { msg.status = "draft"; render(); };
-
-          li.appendChild(document.createTextNode(" Start: "));
-          li.appendChild(startInput);
-          li.appendChild(document.createTextNode(" End: "));
-          li.appendChild(endInput);
-          li.appendChild(approveBtn);
-          li.appendChild(rejectBtn);
-
-          document.getElementById("approvalList").appendChild(li);
-        }
-
-        if (msg.status === "approved") {
-          li.appendChild(document.createTextNode(` [Approved: ${msg.startDate} → ${msg.endDate}]`));
-          document.getElementById("approvedList").appendChild(li);
-
-          const prepLi = document.createElement("li");
-          prepLi.textContent = msg.lines.filter(l => l).join(" | ") +
-            ` (Active: ${msg.startDate} – ${msg.endDate})`;
-          document.getElementById("prepSheet").appendChild(prepLi);
-        }
-      });
+    // Draft
+    if (msg.status === "draft") {
+      const li = document.createElement("li");
+      li.textContent = content;
+      const submitBtn = document.createElement("button");
+      submitBtn.textContent = "Submit for Approval";
+      submitBtn.onclick = () => { msg.status = "pending"; render(); };
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "Delete";
+      delBtn.onclick = () => { messages = messages.filter(m => m.id !== msg.id); render(); };
+      li.appendChild(document.createTextNode(" "));
+      li.appendChild(submitBtn);
+      li.appendChild(document.createTextNode(" "));
+      li.appendChild(delBtn);
+      draftList.appendChild(li);
     }
 
-    function createMessage(status) {
-      const lines = [
-        document.getElementById("line1").value.trim(),
-        document.getElementById("line2").value.trim(),
-        document.getElementById("line3").value.trim(),
-        document.getElementById("line4").value.trim()
-      ];
-      messages.push({ id: nextId++, lines, status, startDate: null, endDate: null });
-      document.getElementById("messageForm").reset();
-      render();
+    // Pending
+    if (msg.status === "pending") {
+      const li = document.createElement("li");
+      li.textContent = content + " [Pending] ";
+
+      const startInput = document.createElement("input");
+      startInput.type = "date";
+      startInput.value = msg.startDate || todayStr();
+      const endInput = document.createElement("input");
+      endInput.type = "date";
+      endInput.value = msg.endDate || todayStr();
+
+      const approveBtn = document.createElement("button");
+      approveBtn.textContent = "Approve";
+      approveBtn.onclick = () => {
+        msg.startDate = startInput.value;
+        msg.endDate = endInput.value;
+        msg.status = "approved";
+        render();
+      };
+
+      const rejectBtn = document.createElement("button");
+      rejectBtn.textContent = "Reject";
+      rejectBtn.onclick = () => { msg.status = "draft"; render(); };
+
+      li.appendChild(document.createTextNode(" Start: "));
+      li.appendChild(startInput);
+      li.appendChild(document.createTextNode(" End: "));
+      li.appendChild(endInput);
+      li.appendChild(document.createTextNode(" "));
+      li.appendChild(approveBtn);
+      li.appendChild(document.createTextNode(" "));
+      li.appendChild(rejectBtn);
+      pendingList.appendChild(li);
     }
 
-    document.getElementById("saveDraftBtn").addEventListener("click", () => createMessage("draft"));
-    document.getElementById("submitApprovalBtn").addEventListener("click", () => createMessage("pending"));
+    // Approved
+    if (msg.status === "approved") {
+      const li = document.createElement("li");
+      li.textContent = content + ` [${msg.startDate} → ${msg.endDate}]`;
+      approvedList.appendChild(li);
 
-    render();
-  </script>
+      // Prep Sheet logic: show if today is between start and end, or start/end is today
+      const today = todayStr();
+      if ((today >= msg.startDate && today <= msg.endDate) ||
+          today === msg.startDate || today === msg.endDate) {
+        const prepLi = document.createElement("li");
+        prepLi.textContent = content + ` (Active: ${msg.startDate} – ${msg.endDate})`;
+        prepSheet.appendChild(prepLi);
+      }
+    }
+  });
+}
+
+// Create a message object
+function createMessage(status) {
+  const lines = [
+    document.getElementById("line1").value.trim(),
+    document.getElementById("line2").value.trim(),
+    document.getElementById("line3").value.trim(),
+    document.getElementById("line4").value.trim()
+  ];
+  messages.push({
+    id: nextId++,
+    lines,
+    status,
+    startDate: null,
+    endDate: null
+  });
+  document.getElementById("line1").value = "";
+  document.getElementById("line2").value = "";
+  document.getElementById("line3").value = "";
+  document.getElementById("line4").value = "";
+  render();
+}
+
+document.getElementById("saveDraftBtn").addEventListener("click", () => createMessage("draft"));
+document.getElementById("submitPendingBtn").addEventListener("click", () => createMessage("pending"));
+
+render();
+</script>
 </body>
 </html>
