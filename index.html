@@ -153,12 +153,18 @@
     </section>
   </main>
 
+  <button id="next-btn">Next Message</button>
+
   <script>
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('message-form');
   const scheduledList = document.getElementById('scheduled-list');
   const currentBoard = document.getElementById('current-board');
   const prepSheet = document.getElementById('prep-sheet');
+  const nextBtn = document.getElementById('next-btn'); // new button for rotation
+
+  let scheduledMessages = [];
+  let currentIndex = -1; // which scheduled message is currently displayed
 
   // Ensure the board has 4 lines
   function ensureBoardLines() {
@@ -169,8 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   ensureBoardLines();
-
-  let scheduledMessages = [];
 
   // Submit a new message
   form.addEventListener('submit', (e) => {
@@ -183,13 +187,17 @@ document.addEventListener('DOMContentLoaded', () => {
       data.get('line4') || ''
     ];
 
-    // Skip empty messages
     if (message.every(line => line.trim() === '')) return;
 
     scheduledMessages.push(message);
     renderSchedule();
-    generatePrepSheet(message); // show prep for the new message
     form.reset();
+
+    // If this is the first message, display it immediately
+    if (currentIndex === -1) {
+      currentIndex = 0;
+      applyMessage(currentIndex);
+    }
   });
 
   function renderSchedule() {
@@ -199,14 +207,8 @@ document.addEventListener('DOMContentLoaded', () => {
       container.className = 'line';
 
       const text = document.createElement('div');
-      text.textContent = `Message ${idx+1}: ${msg.join(' | ')}`;
+      text.textContent = `#${idx+1}: ${msg.join(' | ')}`;
       container.appendChild(text);
-
-      const applyBtn = document.createElement('button');
-      applyBtn.textContent = 'Apply';
-      applyBtn.style.marginLeft = '8px';
-      applyBtn.addEventListener('click', () => applyMessage(idx));
-      container.appendChild(applyBtn);
 
       const delBtn = document.createElement('button');
       delBtn.textContent = 'Delete';
@@ -215,12 +217,23 @@ document.addEventListener('DOMContentLoaded', () => {
       delBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
         scheduledMessages.splice(idx, 1);
+        if (idx === currentIndex) {
+          currentIndex = -1;
+          clearBoard();
+        } else if (idx < currentIndex) {
+          currentIndex--; // adjust index if earlier item removed
+        }
         renderSchedule();
       });
       container.appendChild(delBtn);
 
       scheduledList.appendChild(container);
     });
+  }
+
+  function clearBoard() {
+    Array.from(currentBoard.children).forEach(div => div.textContent = '');
+    prepSheet.innerHTML = '';
   }
 
   function charCounts(str) {
@@ -238,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     newMessage.forEach((line, i) => {
       const oldLine = currentLines[i] || '';
-      if (line.trim() === '' && oldLine.trim() === '') return; // skip empty/no change lines
+      if (line.trim() === '' && oldLine.trim() === '') return;
 
       const liHeader = document.createElement('li');
       liHeader.textContent = `Line ${i+1}:`;
@@ -262,21 +275,23 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function applyMessage(index) {
+    if (index < 0 || index >= scheduledMessages.length) return;
     const msg = scheduledMessages[index];
-    const currentLines = Array.from(currentBoard.children).map(div => div.textContent || '');
-    generatePrepSheet(msg); // prep BEFORE applying
+    generatePrepSheet(msg);
 
-    // Apply only lines that have content in the new message
     msg.forEach((line, i) => {
       if (line.trim() !== '') {
         currentBoard.children[i].textContent = line;
       }
     });
-
-    // Remove the message from scheduled
-    scheduledMessages.splice(index, 1);
-    renderSchedule();
   }
+
+  // Handle "Next Message" rotation
+  nextBtn.addEventListener('click', () => {
+    if (scheduledMessages.length === 0) return;
+    currentIndex = (currentIndex + 1) % scheduledMessages.length;
+    applyMessage(currentIndex);
+  });
 
   renderSchedule();
 });
