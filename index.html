@@ -72,7 +72,9 @@ li[draggable="true"]:active {
         ");
 
         while($row = $prepSheet->fetch_assoc()){
-            echo "<li draggable='true' data-id='{$row['prepsheet_id']}'>Line {$row['line_id']}: {$row['content']}</li>";
+            echo '<li draggable="true" data-id="'.$row['prepsheet_id'].'">';
+            echo 'Line '.$row['line_id'].': '.$row['content'];
+            echo '</li>';
         }
         ?>
       </ul>
