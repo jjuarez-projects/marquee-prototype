@@ -157,13 +157,34 @@ function render() {
 
       // Prep Sheet logic
       const today = todayStr();
-      if ((today >= msg.startDate && today <= msg.endDate) ||
-          today === msg.startDate || today === msg.endDate) {
-        const prepLi = document.createElement("li");
-        prepLi.textContent = msg.lines.filter(l => l).join(" | ") +
-                            ` (Active: ${msg.startDate} – ${msg.endDate})`;
-        prepSheet.appendChild(prepLi);
-      }
+      messages.forEach(msg => {
+        if (msg.status === "approved") {
+          const prepLi = document.createElement("li");
+          prepLi.textContent = msg.lines.filter(l => l).join(" | ") +
+                              ` (Active: ${msg.startDate} – ${msg.endDate})`;
+
+          // Highlight messages being added today
+          if (msg.startDate === today) {
+            prepLi.style.backgroundColor = "#d4edda"; // green
+            prepLi.style.fontWeight = "bold";
+            prepLi.textContent += " → ADD";
+          }
+
+          // Highlight messages being removed today
+          if (msg.endDate === today) {
+            prepLi.style.backgroundColor = "#f8d7da"; // red
+            prepLi.style.fontWeight = "bold";
+            prepLi.textContent += " → REMOVE";
+          }
+
+          // Show if today is active (between start and end)
+          if (today > msg.startDate && today < msg.endDate) {
+            prepLi.style.backgroundColor = "#fff3cd"; // yellow
+          }
+
+          prepSheet.appendChild(prepLi);
+        }
+      });
     }
   });
 }
