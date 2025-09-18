@@ -113,188 +113,117 @@
   </style>
 </head>
 <body>
-  <header>
-    <h1>Otter Marquee</h1>
-  </header>
-  <main>
-    <!-- Current marquee -->
-    <section>
-      <h2>Currently Displayed</h2>
-      <div class="marquee-board" id="current-board">
-        <div>Welcome Back Students</div>
-        <div>Go Wildcats!</div>
-        <div>Homecoming 9/20</div>
-        <div>Early Dismissal Fri</div>
-      </div>
-    </section>
+  <h1>otter marquee</h1>
 
-    <!-- New message planner -->
-    <section>
-      <h2>Plan a Message</h2>
-      <form class="message-form" id="message-form">
-        <input type="text" placeholder="Line 1" name="line1">
-        <input type="text" placeholder="Line 2" name="line2">
-        <input type="text" placeholder="Line 3" name="line3">
-        <input type="text" placeholder="Line 4" name="line4">
-        <button type="submit">Schedule Message</button>
-      </form>
-    </section>
+  <!-- New Message Form -->
+  <section>
+    <h2>Create Message</h2>
+    <form id="messageForm">
+      <label>Line 1: <input type="text" id="line1" /></label><br/>
+      <label>Line 2: <input type="text" id="line2" /></label><br/>
+      <label>Line 3: <input type="text" id="line3" /></label><br/>
+      <label>Line 4: <input type="text" id="line4" /></label><br/>
+      <button type="button" id="saveDraftBtn">Save as Draft</button>
+      <button type="button" id="submitApprovalBtn">Submit for Approval</button>
+    </form>
+  </section>
 
-    <!-- Schedule view -->
-    <section>
-      <h2>Scheduled Messages</h2>
-      <div id="scheduled-list"></div>
-    </section>
+  <!-- Drafts -->
+  <section>
+    <h2>Draft Messages</h2>
+    <ul id="draftList"></ul>
+  </section>
 
-    <!-- Prep sheet -->
-    <section class="prep-list">
-      <h2>Prep Sheet (Next Change)</h2>
-      <ul id="prep-sheet"></ul>
-    </section>
-  </main>
+  <!-- Approval Queue -->
+  <section>
+    <h2>Approval Queue</h2>
+    <ul id="approvalList"></ul>
+  </section>
 
-  <button id="next-btn">Next Message</button>
+  <!-- Approved / Scheduled -->
+  <section>
+    <h2>Approved Messages</h2>
+    <ul id="approvedList"></ul>
+  </section>
+
+  <!-- Prep Sheet -->
+  <section>
+    <h2>Prep Sheet (Approved Only)</h2>
+    <ul id="prepSheet"></ul>
+  </section>
 
   <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('message-form');
-  const scheduledList = document.getElementById('scheduled-list');
-  const currentBoard = document.getElementById('current-board');
-  const prepSheet = document.getElementById('prep-sheet');
-  const nextBtn = document.getElementById('next-btn'); // new button for rotation
+    let messages = [];
+    let nextId = 1;
 
-  let scheduledMessages = [];
-  let currentIndex = -1; // which scheduled message is currently displayed
+    // Utility: render all lists
+    function render() {
+      // Clear existing lists
+      document.getElementById("draftList").innerHTML = "";
+      document.getElementById("approvalList").innerHTML = "";
+      document.getElementById("approvedList").innerHTML = "";
+      document.getElementById("prepSheet").innerHTML = "";
 
-  // Ensure the board has 4 lines
-  function ensureBoardLines() {
-    while (currentBoard.children.length < 4) {
-      const div = document.createElement('div');
-      div.textContent = '';
-      currentBoard.appendChild(div);
-    }
-  }
-  ensureBoardLines();
+      messages.forEach(msg => {
+        const li = document.createElement("li");
+        li.textContent = msg.lines.filter(l => l).join(" | ") + ` [${msg.status}]`;
 
-  // Submit a new message
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const data = new FormData(form);
-    const message = [
-      data.get('line1') || '',
-      data.get('line2') || '',
-      data.get('line3') || '',
-      data.get('line4') || ''
-    ];
+        if (msg.status === "draft") {
+          const submitBtn = document.createElement("button");
+          submitBtn.textContent = "Submit for Approval";
+          submitBtn.onclick = () => { msg.status = "pending"; render(); };
 
-    if (message.every(line => line.trim() === '')) return;
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Delete";
+          delBtn.onclick = () => { messages = messages.filter(m => m.id !== msg.id); render(); };
 
-    scheduledMessages.push(message);
-    renderSchedule();
-    form.reset();
-
-    // If this is the first message, display it immediately
-    if (currentIndex === -1) {
-      currentIndex = 0;
-      applyMessage(currentIndex);
-    }
-  });
-
-  function renderSchedule() {
-    scheduledList.innerHTML = '';
-    scheduledMessages.forEach((msg, idx) => {
-      const container = document.createElement('div');
-      container.className = 'line';
-
-      const text = document.createElement('div');
-      text.textContent = `#${idx+1}: ${msg.join(' | ')}`;
-      container.appendChild(text);
-
-      const delBtn = document.createElement('button');
-      delBtn.textContent = 'Delete';
-      delBtn.style.marginLeft = '6px';
-      delBtn.style.background = '#cc0000';
-      delBtn.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        scheduledMessages.splice(idx, 1);
-        if (idx === currentIndex) {
-          currentIndex = -1;
-          clearBoard();
-        } else if (idx < currentIndex) {
-          currentIndex--; // adjust index if earlier item removed
+          li.appendChild(submitBtn);
+          li.appendChild(delBtn);
+          document.getElementById("draftList").appendChild(li);
         }
-        renderSchedule();
+
+        if (msg.status === "pending") {
+          const approveBtn = document.createElement("button");
+          approveBtn.textContent = "Approve";
+          approveBtn.onclick = () => { msg.status = "approved"; render(); };
+
+          const rejectBtn = document.createElement("button");
+          rejectBtn.textContent = "Reject";
+          rejectBtn.onclick = () => { msg.status = "draft"; render(); };
+
+          li.appendChild(approveBtn);
+          li.appendChild(rejectBtn);
+          document.getElementById("approvalList").appendChild(li);
+        }
+
+        if (msg.status === "approved") {
+          document.getElementById("approvedList").appendChild(li);
+
+          // Also show in prep sheet
+          const prepLi = document.createElement("li");
+          prepLi.textContent = msg.lines.filter(l => l).join(" | ");
+          document.getElementById("prepSheet").appendChild(prepLi);
+        }
       });
-      container.appendChild(delBtn);
-
-      scheduledList.appendChild(container);
-    });
-  }
-
-  function clearBoard() {
-    Array.from(currentBoard.children).forEach(div => div.textContent = '');
-    prepSheet.innerHTML = '';
-  }
-
-  function charCounts(str) {
-    const counts = {};
-    const normalized = str.toUpperCase().replace(/\s+/g,'');
-    for (const ch of normalized) {
-      counts[ch] = (counts[ch] || 0) + 1;
     }
-    return counts;
-  }
 
-  function generatePrepSheet(newMessage) {
-    prepSheet.innerHTML = '';
-    const currentLines = Array.from(currentBoard.children).map(div => div.textContent || '');
+    // Create new message
+    function createMessage(status) {
+      const lines = [
+        document.getElementById("line1").value.trim(),
+        document.getElementById("line2").value.trim(),
+        document.getElementById("line3").value.trim(),
+        document.getElementById("line4").value.trim()
+      ];
+      messages.push({ id: nextId++, lines, status });
+      document.getElementById("messageForm").reset();
+      render();
+    }
 
-    newMessage.forEach((line, i) => {
-      const oldLine = currentLines[i] || '';
-      if (line.trim() === '' && oldLine.trim() === '') return;
+    document.getElementById("saveDraftBtn").addEventListener("click", () => createMessage("draft"));
+    document.getElementById("submitApprovalBtn").addEventListener("click", () => createMessage("pending"));
 
-      const liHeader = document.createElement('li');
-      liHeader.textContent = `Line ${i+1}:`;
-      liHeader.style.fontWeight = 'bold';
-      prepSheet.appendChild(liHeader);
-
-      const oldCounts = charCounts(oldLine);
-      const newCounts = charCounts(line);
-
-      const removeLetters = Object.keys(oldCounts).filter(ch => !newCounts[ch]);
-      const addLetters = Object.keys(newCounts).filter(ch => !oldCounts[ch]);
-
-      const liRemove = document.createElement('li');
-      liRemove.textContent = removeLetters.length ? '- ' + removeLetters.join(', ') : '- (none)';
-      prepSheet.appendChild(liRemove);
-
-      const liAdd = document.createElement('li');
-      liAdd.textContent = addLetters.length ? '+ ' + addLetters.join(', ') : '+ (none)';
-      prepSheet.appendChild(liAdd);
-    });
-  }
-
-  function applyMessage(index) {
-    if (index < 0 || index >= scheduledMessages.length) return;
-    const msg = scheduledMessages[index];
-    generatePrepSheet(msg);
-
-    msg.forEach((line, i) => {
-      if (line.trim() !== '') {
-        currentBoard.children[i].textContent = line;
-      }
-    });
-  }
-
-  // Handle "Next Message" rotation
-  nextBtn.addEventListener('click', () => {
-    if (scheduledMessages.length === 0) return;
-    currentIndex = (currentIndex + 1) % scheduledMessages.length;
-    applyMessage(currentIndex);
-  });
-
-  renderSchedule();
-});
-</script>
+    render();
+  </script>
 </body>
 </html>
