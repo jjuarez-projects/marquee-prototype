@@ -127,15 +127,41 @@ function render() {
     // Approved
     if (msg.status === "approved") {
       const li = document.createElement("li");
-      li.textContent = content + ` [${msg.startDate} → ${msg.endDate}]`;
+      li.textContent = msg.lines.filter(l => l).join(" | ");
+
+      // Editable start/end dates
+      const startInput = document.createElement("input");
+      startInput.type = "date";
+      startInput.value = msg.startDate;
+      const endInput = document.createElement("input");
+      endInput.type = "date";
+      endInput.value = msg.endDate;
+
+      // Update button
+      const updateBtn = document.createElement("button");
+      updateBtn.textContent = "Update Dates";
+      updateBtn.onclick = () => {
+        msg.startDate = startInput.value;
+        msg.endDate = endInput.value;
+        render();
+      };
+
+      li.appendChild(document.createTextNode(" Start: "));
+      li.appendChild(startInput);
+      li.appendChild(document.createTextNode(" End: "));
+      li.appendChild(endInput);
+      li.appendChild(document.createTextNode(" "));
+      li.appendChild(updateBtn);
+
       approvedList.appendChild(li);
 
-      // Prep Sheet logic: show if today is between start and end, or start/end is today
+      // Prep Sheet logic
       const today = todayStr();
       if ((today >= msg.startDate && today <= msg.endDate) ||
           today === msg.startDate || today === msg.endDate) {
         const prepLi = document.createElement("li");
-        prepLi.textContent = content + ` (Active: ${msg.startDate} – ${msg.endDate})`;
+        prepLi.textContent = msg.lines.filter(l => l).join(" | ") +
+                            ` (Active: ${msg.startDate} – ${msg.endDate})`;
         prepSheet.appendChild(prepLi);
       }
     }
