@@ -2,6 +2,11 @@
 
 // connect
 $mysqli = new mysqli("localhost", "v8zx7hspzxaw", "ThaZ5c@Oik1s", "marquee");
+if ($mysqli->connect_error) {
+    die("Connection failed: " . $mysqli->connect_error);
+} else {
+    echo "Connected!";
+}
 
 if ($mysqli->connect_error) {
     die("Connection failed: " . $mysqli->connect_error);
