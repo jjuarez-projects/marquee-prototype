@@ -17,13 +17,14 @@ if ($content === '') {
 
 // Insert into Messages
 $stmt = $mysqli->prepare("INSERT INTO Messages (line_id, content) VALUES (?, ?)");
-$stmt->bind_param("is", $line_id, $content);
-
-if ($stmt->execute()) {
-    echo "Message inserted with ID: " . $stmt->insert_id;
-} else {
-    echo "Error: " . $stmt->error;
+if (!$stmt) {
+    die("Prepare failed: " . $mysqli->error);
 }
+$stmt->bind_param("is", $line_id, $content);
+if (!$stmt->execute()) {
+    die("Execute failed: " . $stmt->error);
+}
+echo "Inserted ID: " . $stmt->insert_id;
 
 $stmt->close();
 $mysqli->close();
