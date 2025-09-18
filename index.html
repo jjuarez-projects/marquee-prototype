@@ -59,200 +59,272 @@ li[draggable="true"]:active {
   </section>
 
 <script>
-let messages = [];
-let nextId = 1;
+document.addEventListener('DOMContentLoaded', () => {
+  // In-memory data store (prototype)
+  let messages = [];
+  let nextId = 1;
 
-// Utility: today's date in yyyy-mm-dd for comparison
-function todayStr() {
-  const d = new Date();
-  return d.toISOString().split('T')[0];
-}
+  // Helpers
+  function todayStr() {
+    const d = new Date();
+    return d.toISOString().split('T')[0];
+  }
 
-// Render all lists
-function render() {
-  const draftList = document.getElementById("draftList");
-  const pendingList = document.getElementById("pendingList");
-  const approvedList = document.getElementById("approvedList");
-  const prepSheet = document.getElementById("prepSheet");
+  function clearLists() {
+    document.getElementById("draftList").innerHTML = "";
+    document.getElementById("pendingList").innerHTML = "";
+    document.getElementById("approvedList").innerHTML = "";
+    document.getElementById("prepSheet").innerHTML = "";
+  }
 
-  // Clear all lists first
-  draftList.innerHTML = "";
-  pendingList.innerHTML = "";
-  approvedList.innerHTML = "";
-  prepSheet.innerHTML = "";
+  // Render everything
+  function render() {
+    clearLists();
+    const draftList = document.getElementById("draftList");
+    const pendingList = document.getElementById("pendingList");
+    const approvedList = document.getElementById("approvedList");
+    const prepSheet = document.getElementById("prepSheet");
+    const today = todayStr();
 
-  const today = todayStr();
+    messages.forEach(msg => {
+      const content = msg.lines.filter(l => l).join(" | ") || "(blank)";
 
-  messages.forEach(msg => {
-    const content = msg.lines.filter(l => l).join(" | ");
+      // DRAFT
+      if (msg.status === "draft") {
+        const li = document.createElement("li");
+        li.textContent = content + " ";
+        const submitBtn = document.createElement("button");
+        submitBtn.textContent = "Submit for Approval";
+        submitBtn.onclick = () => { msg.status = "pending"; render(); };
 
-    // DRAFTS
-    if (msg.status === "draft") {
-      const li = document.createElement("li");
-      li.textContent = content;
-      const submitBtn = document.createElement("button");
-      submitBtn.textContent = "Submit for Approval";
-      submitBtn.onclick = () => { msg.status = "pending"; render(); };
-      const delBtn = document.createElement("button");
-      delBtn.textContent = "Delete";
-      delBtn.onclick = () => { messages = messages.filter(m => m.id !== msg.id); render(); };
-      li.appendChild(document.createTextNode(" "));
-      li.appendChild(submitBtn);
-      li.appendChild(document.createTextNode(" "));
-      li.appendChild(delBtn);
-      draftList.appendChild(li);
-    }
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Delete";
+        delBtn.style.marginLeft = "6px";
+        delBtn.onclick = () => { messages = messages.filter(m => m.id !== msg.id); render(); };
 
-    // PENDING
-    if (msg.status === "pending") {
-      const li = document.createElement("li");
-      li.textContent = content + " [Pending] ";
+        li.appendChild(submitBtn);
+        li.appendChild(delBtn);
+        draftList.appendChild(li);
+      }
 
-      const startInput = document.createElement("input");
-      startInput.type = "date";
-      startInput.value = msg.startDate || today;
-      const endInput = document.createElement("input");
-      endInput.type = "date";
-      endInput.value = msg.endDate || today;
+      // PENDING
+      if (msg.status === "pending") {
+        const li = document.createElement("li");
+        li.textContent = content + " [Pending] ";
 
-      const approveBtn = document.createElement("button");
-      approveBtn.textContent = "Approve";
-      approveBtn.onclick = () => {
-        msg.startDate = startInput.value;
-        msg.endDate = endInput.value;
-        msg.status = "approved";
-        render();
-      };
+        const startInput = document.createElement("input");
+        startInput.type = "date";
+        startInput.value = msg.startDate || today;
 
-      const rejectBtn = document.createElement("button");
-      rejectBtn.textContent = "Reject";
-      rejectBtn.onclick = () => { msg.status = "draft"; render(); };
+        const endInput = document.createElement("input");
+        endInput.type = "date";
+        endInput.value = msg.endDate || today;
 
-      li.appendChild(document.createTextNode(" Start: "));
-      li.appendChild(startInput);
-      li.appendChild(document.createTextNode(" End: "));
-      li.appendChild(endInput);
-      li.appendChild(document.createTextNode(" "));
-      li.appendChild(approveBtn);
-      li.appendChild(document.createTextNode(" "));
-      li.appendChild(rejectBtn);
-      pendingList.appendChild(li);
-    }
-
-    // APPROVED
-    if (msg.status === "approved") {
-      const li = document.createElement("li");
-
-      const lineList = document.createElement("ul");
-      lineList.style.listStyleType = "none";
-      lineList.style.paddingLeft = "0";
-
-      msg.lines.forEach((lineText, idx) => {
-        if (!lineText) return; // skip empty lines
-
-        const lineLi = document.createElement("li");
-        lineLi.textContent = lineText;
-        lineLi.draggable = true;
-        lineLi.dataset.index = idx;
-
-        // Drag events
-        lineLi.addEventListener("dragstart", (e) => {
-          e.dataTransfer.setData("text/plain", idx);
-        });
-        lineLi.addEventListener("dragover", (e) => {
-          e.preventDefault();
-        });
-        lineLi.addEventListener("drop", (e) => {
-          e.preventDefault();
-          const fromIdx = parseInt(e.dataTransfer.getData("text/plain"));
-          const toIdx = idx;
-          // Swap lines
-          const temp = msg.lines[fromIdx];
-          msg.lines[fromIdx] = msg.lines[toIdx];
-          msg.lines[toIdx] = temp;
+        const approveBtn = document.createElement("button");
+        approveBtn.textContent = "Approve";
+        approveBtn.onclick = () => {
+          if (!startInput.value || !endInput.value) {
+            alert("Please select start and end dates before approving.");
+            return;
+          }
+          msg.startDate = startInput.value;
+          msg.endDate = endInput.value;
+          msg.status = "approved";
           render();
+        };
+
+        const rejectBtn = document.createElement("button");
+        rejectBtn.textContent = "Reject";
+        rejectBtn.style.marginLeft = "6px";
+        rejectBtn.onclick = () => { msg.status = "draft"; render(); };
+
+        li.appendChild(document.createTextNode(" Start: "));
+        li.appendChild(startInput);
+        li.appendChild(document.createTextNode(" End: "));
+        li.appendChild(endInput);
+        li.appendChild(approveBtn);
+        li.appendChild(rejectBtn);
+        pendingList.appendChild(li);
+      }
+
+      // APPROVED
+      if (msg.status === "approved") {
+        const outerLi = document.createElement("li");
+        outerLi.style.marginBottom = "0.5rem";
+
+        // Line list (draggable items)
+        const lineList = document.createElement("ul");
+        lineList.style.listStyle = "none";
+        lineList.style.padding = "0";
+        lineList.style.margin = "0 0 6px 0";
+        lineList.style.maxWidth = "420px";
+
+        msg.lines.forEach((lineText, idx) => {
+          const lineLi = document.createElement("li");
+          lineLi.textContent = lineText || "(blank)";
+          lineLi.style.border = "1px solid #ccc";
+          lineLi.style.padding = "6px";
+          lineLi.style.margin = "4px 0";
+          lineLi.style.background = "#f9f9f9";
+          lineLi.style.cursor = "grab";
+          lineLi.draggable = true;
+          lineLi.dataset.msgId = msg.id;
+          lineLi.dataset.index = idx;
+
+          // Drag start
+          lineLi.addEventListener('dragstart', (e) => {
+            const payload = JSON.stringify({ msgId: msg.id, from: idx });
+            e.dataTransfer.setData('application/json', payload);
+            e.dataTransfer.effectAllowed = 'move';
+            lineLi.style.opacity = '0.5';
+          });
+
+          lineLi.addEventListener('dragend', () => {
+            lineLi.style.opacity = '1';
+          });
+
+          // Allow drop on each line (swap with target)
+          lineLi.addEventListener('dragover', (e) => {
+            e.preventDefault();
+          });
+
+          lineLi.addEventListener('drop', (e) => {
+            e.preventDefault();
+            try {
+              const data = JSON.parse(e.dataTransfer.getData('application/json'));
+              const fromMsgId = data.msgId;
+              const fromIdx = data.from;
+              const toIdx = parseInt(lineLi.dataset.index, 10);
+              // Only allow reordering within the same message
+              if (fromMsgId === msg.id) {
+                const tmp = msg.lines[fromIdx];
+                msg.lines[fromIdx] = msg.lines[toIdx];
+                msg.lines[toIdx] = tmp;
+                render();
+              }
+            } catch (err) {
+              // ignore bad drop
+            }
+          });
+
+          lineList.appendChild(lineLi);
         });
 
-        lineList.appendChild(lineLi);
-      });
+        // Allow dropping onto the list area to move to end
+        lineList.addEventListener('dragover', (e) => { e.preventDefault(); });
+        lineList.addEventListener('drop', (e) => {
+          e.preventDefault();
+          try {
+            const data = JSON.parse(e.dataTransfer.getData('application/json'));
+            if (data.msgId === msg.id) {
+              const fromIdx = data.from;
+              const val = msg.lines.splice(fromIdx, 1)[0];
+              msg.lines.push(val);
+              render();
+            }
+          } catch (err) { /* ignore */ }
+        });
 
-      li.appendChild(lineList);
+        outerLi.appendChild(lineList);
 
-      // Add start/end date inputs + update button (existing)
-      const startInput = document.createElement("input");
-      startInput.type = "date";
-      startInput.value = msg.startDate;
-      const endInput = document.createElement("input");
-      endInput.type = "date";
-      endInput.value = msg.endDate;
+        // Date editors for approved message
+        const dateRow = document.createElement('div');
+        dateRow.style.marginTop = '6px';
 
-      const updateBtn = document.createElement("button");
-      updateBtn.textContent = "Update Dates";
-      updateBtn.onclick = () => {
-        msg.startDate = startInput.value;
-        msg.endDate = endInput.value;
-        render();
-      };
+        const startInput = document.createElement("input");
+        startInput.type = "date";
+        startInput.value = msg.startDate;
 
-      li.appendChild(document.createTextNode(" Start: "));
-      li.appendChild(startInput);
-      li.appendChild(document.createTextNode(" End: "));
-      li.appendChild(endInput);
-      li.appendChild(document.createTextNode(" "));
-      li.appendChild(updateBtn);
+        const endInput = document.createElement("input");
+        endInput.type = "date";
+        endInput.value = msg.endDate;
 
-      approvedList.appendChild(li);
+        const updateBtn = document.createElement("button");
+        updateBtn.textContent = "Update Dates";
+        updateBtn.style.marginLeft = "6px";
+        updateBtn.onclick = () => {
+          msg.startDate = startInput.value;
+          msg.endDate = endInput.value;
+          render();
+        };
 
-      // Prep sheet (unchanged)
-      const prepLi = document.createElement("li");
-      prepLi.textContent = msg.lines.filter(l => l).join(" | ") +
-                          ` (Active: ${msg.startDate} – ${msg.endDate})`;
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.style.marginLeft = "6px";
+        deleteBtn.style.background = "#cc0000";
+        deleteBtn.onclick = () => {
+          messages = messages.filter(m => m.id !== msg.id);
+          render();
+        };
 
-      if (msg.startDate === today) {
-        prepLi.style.backgroundColor = "#d4edda";
-        prepLi.style.fontWeight = "bold";
-        prepLi.textContent += " → ADD";
+        dateRow.appendChild(document.createTextNode("Start: "));
+        dateRow.appendChild(startInput);
+        dateRow.appendChild(document.createTextNode(" End: "));
+        dateRow.appendChild(endInput);
+        dateRow.appendChild(updateBtn);
+        dateRow.appendChild(deleteBtn);
+
+        outerLi.appendChild(dateRow);
+        approvedList.appendChild(outerLi);
+
+        // Prep sheet entry (only once per approved message)
+        // Show if active today or starting/ending today
+        if ((today >= msg.startDate && today <= msg.endDate) ||
+            today === msg.startDate || today === msg.endDate) {
+
+          const prepLi = document.createElement("li");
+          prepLi.textContent = msg.lines.filter(l => l).join(" | ") +
+                               ` (Active: ${msg.startDate} – ${msg.endDate})`;
+
+          if (msg.startDate === today) {
+            prepLi.style.backgroundColor = "#d4edda";
+            prepLi.style.fontWeight = "bold";
+            prepLi.textContent += " → ADD";
+          } else if (msg.endDate === today) {
+            prepLi.style.backgroundColor = "#f8d7da";
+            prepLi.style.fontWeight = "bold";
+            prepLi.textContent += " → REMOVE";
+          } else {
+            prepLi.style.backgroundColor = "#fff3cd"; // active
+          }
+
+          prepSheet.appendChild(prepLi);
+        }
       }
-      if (msg.endDate === today) {
-        prepLi.style.backgroundColor = "#f8d7da";
-        prepLi.style.fontWeight = "bold";
-        prepLi.textContent += " → REMOVE";
-      }
-      if (today > msg.startDate && today < msg.endDate) {
-        prepLi.style.backgroundColor = "#fff3cd";
-      }
+    });
+  }
 
-      prepSheet.appendChild(prepLi);
-    }
-  });
-}
+  // Create message (status: draft or pending)
+  function createMessage(status) {
+    const lines = [
+      document.getElementById("line1").value.trim(),
+      document.getElementById("line2").value.trim(),
+      document.getElementById("line3").value.trim(),
+      document.getElementById("line4").value.trim()
+    ];
+    messages.push({
+      id: nextId++,
+      lines,
+      status,
+      startDate: null,
+      endDate: null
+    });
+    // clear inputs
+    document.getElementById("line1").value = "";
+    document.getElementById("line2").value = "";
+    document.getElementById("line3").value = "";
+    document.getElementById("line4").value = "";
+    render();
+  }
 
-// Create a message object
-function createMessage(status) {
-  const lines = [
-    document.getElementById("line1").value.trim(),
-    document.getElementById("line2").value.trim(),
-    document.getElementById("line3").value.trim(),
-    document.getElementById("line4").value.trim()
-  ];
-  messages.push({
-    id: nextId++,
-    lines,
-    status,
-    startDate: null,
-    endDate: null
-  });
-  document.getElementById("line1").value = "";
-  document.getElementById("line2").value = "";
-  document.getElementById("line3").value = "";
-  document.getElementById("line4").value = "";
+  // Wire up buttons
+  document.getElementById("saveDraftBtn").addEventListener("click", () => createMessage("draft"));
+  document.getElementById("submitPendingBtn").addEventListener("click", () => createMessage("pending"));
+
+  // initial render
   render();
-}
-
-document.getElementById("saveDraftBtn").addEventListener("click", () => createMessage("draft"));
-document.getElementById("submitPendingBtn").addEventListener("click", () => createMessage("pending"));
-
-render();
+});
 </script>
+
 </body>
 </html>
