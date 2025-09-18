@@ -29,18 +29,16 @@ li[draggable="true"]:active {
   <!-- Draft Creation -->
   <section>
     <h2>Create Message Draft</h2>
-    <form action="insert_message.php" method="POST">
-      <label for="line">Line:</label>
-      <select name="line_id">
-        <option value="1">Line 1</option>
-        <option value="2">Line 2</option>
-        <option value="3">Line 3</option>
-        <option value="4">Line 4</option>
-      </select>
+    <form method="POST" action="insert_message.php">
+      <label>Message:</label>
+      <input type="text" name="content" required><br>
 
-      <label for="content">Message:</label>
-      <input type="text" name="content" required>
-
+      <label>Select lines:</label><br>
+      <input type="checkbox" name="lines[]" value="1"> Line 1
+      <input type="checkbox" name="lines[]" value="2"> Line 2
+      <input type="checkbox" name="lines[]" value="3"> Line 3
+      <input type="checkbox" name="lines[]" value="4"> Line 4
+      <br><br>
       <button type="submit">Submit Message</button>
     </form>
   </section>
@@ -63,7 +61,21 @@ li[draggable="true"]:active {
 
   <section>
     <h2>Prep Sheet (Today’s Work)</h2>
-    <ul id="prepSheet"></ul>
+    <ul id="prepSheetList">
+        <?php
+        $prepSheet = $mysqli->query("
+            SELECT ps.prepsheet_id, ml.line_id, m.content
+            FROM PrepSheet ps
+            JOIN MessageLines ml ON ps.message_line_id = ml.message_line_id
+            JOIN Messages m ON ml.message_id = m.message_id
+            ORDER BY ps.position ASC
+        ");
+
+        while($row = $prepSheet->fetch_assoc()){
+            echo "<li draggable='true' data-id='{$row['prepsheet_id']}'>Line {$row['line_id']}: {$row['content']}</li>";
+        }
+        ?>
+      </ul>
   </section>
 
 <script>
@@ -332,6 +344,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // initial render
   render();
 });
+
+  const list = document.getElementById('prepSheetList');
+  let dragged = null;
+
+  list.addEventListener('dragstart', e => dragged = e.target);
+  list.addEventListener('dragover', e => e.preventDefault());
+  list.addEventListener('drop', e => {
+    e.preventDefault();
+    if(e.target.tagName === 'LI'){
+      list.insertBefore(dragged, e.target.nextSibling);
+      // Optional: AJAX to update position in PrepSheet table
+    }
+  });
 </script>
 
 </body>
