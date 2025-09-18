@@ -63,15 +63,18 @@ function render() {
   const approvedList = document.getElementById("approvedList");
   const prepSheet = document.getElementById("prepSheet");
 
+  // Clear all lists first
   draftList.innerHTML = "";
   pendingList.innerHTML = "";
   approvedList.innerHTML = "";
   prepSheet.innerHTML = "";
 
+  const today = todayStr();
+
   messages.forEach(msg => {
     const content = msg.lines.filter(l => l).join(" | ");
 
-    // Draft
+    // DRAFTS
     if (msg.status === "draft") {
       const li = document.createElement("li");
       li.textContent = content;
@@ -88,17 +91,17 @@ function render() {
       draftList.appendChild(li);
     }
 
-    // Pending
+    // PENDING
     if (msg.status === "pending") {
       const li = document.createElement("li");
       li.textContent = content + " [Pending] ";
 
       const startInput = document.createElement("input");
       startInput.type = "date";
-      startInput.value = msg.startDate || todayStr();
+      startInput.value = msg.startDate || today;
       const endInput = document.createElement("input");
       endInput.type = "date";
-      endInput.value = msg.endDate || todayStr();
+      endInput.value = msg.endDate || today;
 
       const approveBtn = document.createElement("button");
       approveBtn.textContent = "Approve";
@@ -124,12 +127,11 @@ function render() {
       pendingList.appendChild(li);
     }
 
-    // Approved
+    // APPROVED
     if (msg.status === "approved") {
       const li = document.createElement("li");
-      li.textContent = msg.lines.filter(l => l).join(" | ");
+      li.textContent = content;
 
-      // Editable start/end dates
       const startInput = document.createElement("input");
       startInput.type = "date";
       startInput.value = msg.startDate;
@@ -137,7 +139,6 @@ function render() {
       endInput.type = "date";
       endInput.value = msg.endDate;
 
-      // Update button
       const updateBtn = document.createElement("button");
       updateBtn.textContent = "Update Dates";
       updateBtn.onclick = () => {
@@ -155,36 +156,25 @@ function render() {
 
       approvedList.appendChild(li);
 
-      // Prep Sheet logic
-      const today = todayStr();
-      messages.forEach(msg => {
-        if (msg.status === "approved") {
-          const prepLi = document.createElement("li");
-          prepLi.textContent = msg.lines.filter(l => l).join(" | ") +
-                              ` (Active: ${msg.startDate} – ${msg.endDate})`;
+      // Prep sheet
+      const prepLi = document.createElement("li");
+      prepLi.textContent = content + ` (Active: ${msg.startDate} – ${msg.endDate})`;
 
-          // Highlight messages being added today
-          if (msg.startDate === today) {
-            prepLi.style.backgroundColor = "#d4edda"; // green
-            prepLi.style.fontWeight = "bold";
-            prepLi.textContent += " → ADD";
-          }
+      if (msg.startDate === today) {
+        prepLi.style.backgroundColor = "#d4edda"; // green
+        prepLi.style.fontWeight = "bold";
+        prepLi.textContent += " → ADD";
+      }
+      if (msg.endDate === today) {
+        prepLi.style.backgroundColor = "#f8d7da"; // red
+        prepLi.style.fontWeight = "bold";
+        prepLi.textContent += " → REMOVE";
+      }
+      if (today > msg.startDate && today < msg.endDate) {
+        prepLi.style.backgroundColor = "#fff3cd"; // yellow
+      }
 
-          // Highlight messages being removed today
-          if (msg.endDate === today) {
-            prepLi.style.backgroundColor = "#f8d7da"; // red
-            prepLi.style.fontWeight = "bold";
-            prepLi.textContent += " → REMOVE";
-          }
-
-          // Show if today is active (between start and end)
-          if (today > msg.startDate && today < msg.endDate) {
-            prepLi.style.backgroundColor = "#fff3cd"; // yellow
-          }
-
-          prepSheet.appendChild(prepLi);
-        }
-      });
+      prepSheet.appendChild(prepLi);
     }
   });
 }
